@@ -1,0 +1,82 @@
+---
+title: "Extracting APPGs"
+output: html_notebook
+---
+
+```{r}
+html <- system("curl -A 'Mozilla/5.0' https://publications.parliament.uk/pa/cm/cmallparty/250618/contents.htm", intern = TRUE)
+cat(html, sep = "\n")
+
+library(xml2)
+library(rvest)
+
+# Combine lines into a single HTML string
+html_text <- paste(html, collapse = "\n")
+
+# Parse into an HTML document
+doc <- read_html(html_text)
+
+```
+
+```{r}
+library(rvest)
+
+# Assuming 'doc' is your HTML document
+links <- html_nodes(doc, "a")            # Find all <a> tags
+hrefs <- html_attr(links, "href")        # Extract 'href' attributes
+
+# View the first few hrefs
+View(hrefs)
+```
+
+```{r}
+library(tibble)
+
+# Assuming 'hrefs' is your vector of extracted URLs
+url_tibble <- tibble(url = hrefs)
+
+# Preview the result
+print(url_tibble)
+
+```
+
+```{r}
+library(dplyr)
+library(tidyverse)
+
+x <- url_tibble %>% 
+   mutate(row_id = row_number()) %>% 
+   drop_na()
+
+target_row <- x %>% 
+   filter(url == "#subject-groups")
+   
+target_row_2 <- x %>% 
+   filter(url == "http://www.parliament.uk/site-information/azindex/")
+
+foo <- x %>% 
+   filter(row_id > target_row$row_id & row_id < target_row_2$row_id)
+```
+
+```{r}
+base_url <- "https://publications.parliament.uk/pa/cm/cmallparty/250618/"
+
+new_url <- cat(base_url, char(foo$url[1]), sep="")
+```
+
+```{r}
+df <- data.frame(appg = character())
+
+for (x in 1:length(foo$row_id)) {
+   new_row <- data.frame(appg = paste(base_url, char(foo$url[x]), sep=""))
+   df <- rbind(df, new_row)
+}
+```
+
+```{r}
+url2 <- pluck(df$appg[1])
+cmd <- paste("curl -A 'Mozilla/5.0'", url2)
+html <- system(cmd, intern = TRUE)
+
+
+```
