@@ -22,27 +22,24 @@ head(html, 3)
 
 Parse HTML text - necessary code?
 ```{r}
-html_text <- paste(html, collapse = "\n")
-doc <- read_html(html_text)
-doc
+html_text <- html %>% 
+   paste(collapse = "\n") %>% 
+   read_html()
 ```
 
 ```{r}
-# Find all <a> tags
-links <- html_nodes(doc, "a") 
-
-# Extract href attributes
-hrefs <- html_attr(links, "href")        
-
+# Find hrefs
+links <- html_text %>% 
+   html_nodes("a") %>% 
+   html_attr("href") 
+       
 # Preview the first five hrefs
-head(hrefs, 5)
+head(links)
 ```
 
 ```{r}
-# Save as tibble
-url_tibble <- tibble(url = hrefs)
-
-# Preview the result
+# Save as tibble and preview
+url_tibble <- tibble(url = links) 
 head(url_tibble)
 ```
 
@@ -52,12 +49,16 @@ Filter out non-APPG hrefs (consistent between versions)
 # Add column for row number and filter NA rows
 url_tibble <- url_tibble %>% 
    mutate(row_id = row_number()) %>% 
-   drop_na()
+   drop_na() %>% 
+   mutate(
+      version = "250618", 
+      name = NA
+   )
 
 # Get target rows (rows before and after which to filter out)
 target_row <- url_tibble %>% 
    filter(url == "#subject-groups")
-   
+
 target_row_2 <- url_tibble %>% 
    filter(url == "http://www.parliament.uk/site-information/azindex/")
 
@@ -65,27 +66,36 @@ filtered_urls <- url_tibble %>%
    filter(row_id > target_row$row_id & row_id < target_row_2$row_id)
 ```
 
+
 Create new dataframe. For each URL, add as new row
 ```{r}
-df <- data.frame(appg = character())
+
+base_url2 <- "https://publications.parliament.uk/pa/cm/cmallparty/250618/"
 
 for (x in 1:length(filtered_urls$row_id)) {
-   new_row <- data.frame(appg = paste(base_url, char(filtered_urls$url[x]), sep=""))
-   df <- rbind(df, new_row)
+   new_row <- paste0(base_url2, as.character(filtered_urls$url[x]), sep="")
+   filtered_urls$url[x] <- rbind(new_row, filtered_urls$url[x])
 }
 
-glimpse(df)
+glimpse(filtered_urls)
 ```
 
-Test with first extracted APPG URL
-```{r}
-base_url_2 <- "https://publications.parliament.uk/pa/cm/cmallparty/250618/"
-appg_url <- cat(base_url_2, char(filtered_urls$url[1]), sep="")
-```
 
 ```{r}
-url2 <- pluck(df$appg[1])
+url2 <- pluck(filtered_urls$url[1])
 cmd <- paste("curl -A 'Mozilla/5.0'", url2)
 new_html <- system(cmd, intern = TRUE)
 head(new_html)
+```
+
+```{r}
+new_html_text <- new_html %>% 
+   paste(collapse = "\n") %>% 
+   read_html()
+```
+
+```{r}
+tables <- html_table(new_html_text, fill = TRUE)
+tables[[1]]
+View(tables)
 ```
