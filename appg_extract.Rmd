@@ -1,0 +1,70 @@
+---
+title: "Getting APPG Data"
+output: html_notebook
+---
+
+```{r warning=FALSE}
+
+library(dplyr)
+library(readr)
+library(rvest)
+library(stringr)
+
+```
+
+
+Load in APPG webpages (stored locally) as HTML strings
+```{r warning=FALSE}
+
+raw_appg_df <- tibble(
+   name = character(), 
+   html_code = character()
+)
+
+files <- list.files(path="./appg_html_files", full.names=TRUE, recursive=FALSE)
+
+# Filter out non-HTML files
+files <- files[!grepl("\\.txt$", files)]
+
+# Get APPG names
+appg_names <- str_extract(files, "(?<=2025：).*?(?=\\(29_06)") |>
+   str_trim()
+
+html_vector <- lapply(files, read_file)
+
+```
+
+For demo purposes, reconstitute webpage from HTML string
+```{r}
+
+tmp_file <- tempfile(fileext = ".html")
+writeLines(html_vector[[1]], tmp_file)
+
+# Open in browser
+browseURL(tmp_file)
+
+```
+
+Populate tibble: APPG name and webpage HTML code
+```{r}
+
+raw_appg_df <- tibble(
+   name = appg_names,
+   html_code = html_vector
+)
+
+# Preview HTML code (500 chars)
+substr(raw_appg_df$html_code[[1]], 1, 500)
+
+```
+
+Read in HTML code and extract tables
+```{r}
+
+test_page <- raw_appg_df$html_code[[1]] %>% 
+   read_html()
+
+page_tables <- html_table(test_page)
+page_tables
+
+```
