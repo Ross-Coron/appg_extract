@@ -9,6 +9,7 @@ library(dplyr)
 library(readr)
 library(rvest)
 library(stringr)
+library(purrr)
 
 ```
 
@@ -38,7 +39,7 @@ For demo purposes, reconstitute webpage from HTML string
 ```{r}
 
 tmp_file <- tempfile(fileext = ".html")
-writeLines(html_vector[[1]], tmp_file)
+writeLines(html_vector[[2]], tmp_file)
 
 # Open in browser
 browseURL(tmp_file)
@@ -61,10 +62,116 @@ substr(raw_appg_df$html_code[[1]], 1, 500)
 Read in HTML code and extract tables
 ```{r}
 
-test_page <- raw_appg_df$html_code[[1]] %>% 
+test_page <- raw_appg_df$html_code[[7]] %>% 
    read_html()
 
 page_tables <- html_table(test_page)
 page_tables
 
 ```
+
+```{r}
+for (n in 1:nrow(raw_appg_df)) {
+   
+   appg_tables <- (raw_appg_df$html_code[[1]]) %>% 
+      read_html() %>% 
+      html_table()
+   
+   entry = "2025-06-18"
+   appg_name = pluck(appg_tables, 1, "X2", 1)
+   appg_purpose = pluck(appg_tables, 1, "X2", 2)
+    appg_category = pluck(appg_tables, 1, "X2", 3)
+   
+   parliamentarian = list()
+   
+   for (m in 3:(length(appg_tables[[2]]$X1))) {
+      
+      new_list = list(
+         member_name = pluck(appg_tables, 2, "X2", m),
+         member_party = pluck(appg_tables, 2, "X3", m),
+         member_role = pluck(appg_tables, 2, "X1", m)
+      )
+      
+      parliamentarian = c(parliamentarian, list(new_list))
+      
+      contact <- pluck(appg_tables, 3, "X1") %>% 
+         str_replace_all(., "\n", "")
+      
+      most_recent_agm <- as.Date(pluck(appg_tables, 4, "X2", 2), format = "%d/%m/%Y")
+      
+      published_statement <- pluck(appg_tables, 4, "X2", 3)
+      reporting_year <- pluck(appg_tables, 4, "X2", 4)
+      next_rep_deadline <- as.Date(pluck(appg_tables, 4, "X2", 5), format = "%d/%m/%Y")
+      
+      benefits <- list()
+      
+      if (appg_tables[[5]]$X1[[2]] == "None") {
+         
+         benefit_received <- FALSE
+         
+         new_list = list(
+            source = NA,
+            description = NA,
+            value = NA, 
+            received = NA, 
+            registered = NA
+         )
+         
+         benefits <- list(benefits, list(new_list))
+         
+      } else {
+         benefit_received <- TRUE
+         
+         for (n in 2:(length(appg_tables[[6]]$X1))) {
+            
+            new_list = list(
+               source = pluck(appg_tables, 5, "X1", n),
+               description = pluck(appg_tables, 5, "X2", n),
+               value = pluck(appg_tables, 5, "X3", n), 
+               received = pluck(appg_tables, 5, "X4", n),
+               registered = pluck(appg_tables, 5, "X5", n),
+            )
+            
+            benefits = c(benefits, list(new_list))
+         }
+      }
+   }
+   
+   appg = list(
+      appg_name = appg_name, 
+      appg_purpose = appg_purpose, 
+      appg_category= appg_category,
+      parliamentarian = parliamentarian,
+      contact = contact, 
+      most_recent_agm = most_recent_agm,
+      published_statement = published_statement, 
+      benefit_received = benefit_received, 
+      benefits = benefits
+   )
+   
+}
+   
+```   
+   
+   entry
+   name
+   purpose
+   category
+   parliamentarian
+   name
+   party
+   role
+   contact
+   most_recent_agm
+   published_statement
+   reporting_year
+   next_reporting_deadline
+   benefits
+   source
+   description
+   value
+   received
+   registered
+   
+   
+   
