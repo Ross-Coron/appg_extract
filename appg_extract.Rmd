@@ -1,9 +1,15 @@
 ---
 title: "Getting APPG Data"
-output: html_notebook
+author: "Ross P. Coron"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    df_print: paged
 ---
 
-```{r warning=FALSE}
+Script to extract All-Party Parliamentary Group (APPG) information. For each APPG listed in Parliament's [Register of All-Party Parliamentary Groups](https://www.parliament.uk/mps-lords-and-offices/standards-and-financial-interests/parliamentary-commissioner-for-standards/registers-of-interests/register-of-all-party-party-parliamentary-groups/) (saved locally but could be scraped), extracts information (stored as tables) into a nested list. Script utilises the [18 June 2025 Register](https://publications.parliament.uk/pa/cm/cmallparty/250618/contents.htm) which contains information on 514 individual Groups. 
+
+```{r message=FALSE, warning=FALSE}
 
 library(dplyr)
 library(readr)
@@ -14,15 +20,12 @@ library(purrr)
 ```
 
 
-Load in APPG webpages (stored locally) as HTML strings
-```{r warning=FALSE}
+Load in APPG webpages (saved locally).
 
-raw_appg_df <- tibble(
-   name = character(), 
-   html_code = character()
-)
+```{r}
 
-files <- list.files(path="./appg_html_files", full.names=TRUE, recursive=FALSE)
+# Get files
+files <- list.files(path="./appg_webpages", full.names=TRUE, recursive=FALSE)
 
 # Filter out non-HTML files
 files <- files[!grepl("\\.txt$", files)]
@@ -31,24 +34,17 @@ files <- files[!grepl("\\.txt$", files)]
 appg_names <- str_extract(files, "(?<=2025：).*?(?=\\(29_06)") |>
    str_trim()
 
+# Read HTML code as string
 html_vector <- lapply(files, read_file)
 
 ```
 
-For demo purposes, reconstitute webpage from HTML string
+
+Populate tibble with APPG names and corresponding webpage's HTML code.
+
 ```{r}
 
-tmp_file <- tempfile(fileext = ".html")
-writeLines(html_vector[[2]], tmp_file)
-
-# Open in browser
-browseURL(tmp_file)
-
-```
-
-Populate tibble: APPG name and webpage HTML code
-```{r}
-
+# Populate dataframe with APPG names and HTML code
 raw_appg_df <- tibble(
    name = appg_names,
    html_code = html_vector
@@ -59,10 +55,26 @@ substr(raw_appg_df$html_code[[1]], 1, 500)
 
 ```
 
-Read in HTML code and extract tables
+
+Demo: reconstruct webpage from HTML string.
+
 ```{r}
 
-test_page <- raw_appg_df$html_code[[7]] %>% 
+tmp_file <- tempfile(fileext = ".html")
+
+writeLines(html_vector[[1]], tmp_file)
+
+# Open in browser
+browseURL(tmp_file)
+
+```
+
+
+Demo: read in APPG's HTML code and extract tables.
+
+```{r}
+
+test_page <- raw_appg_df$html_code[[1]] %>% 
    read_html()
 
 page_tables <- html_table(test_page)
@@ -70,108 +82,106 @@ page_tables
 
 ```
 
+
+Main script: extracts APPG information into a nested list. Reads in HTML code corresponding to an APPG's webpage from a dataframe, extracts tables, and plucks values.
+
 ```{r}
+
+appg <- list()
+
+# For each row in APPG dataframe
 for (n in 1:nrow(raw_appg_df)) {
    
-   appg_tables <- (raw_appg_df$html_code[[1]]) %>% 
+   # Parse HTML and extract tables
+   appg_tables <- raw_appg_df$html_code[[n]] %>% 
       read_html() %>% 
       html_table()
    
-   entry = "2025-06-18"
-   appg_name = pluck(appg_tables, 1, "X2", 1)
-   appg_purpose = pluck(appg_tables, 1, "X2", 2)
-    appg_category = pluck(appg_tables, 1, "X2", 3)
+   # Extract table values
+   entry <- "2025-06-18"
    
-   parliamentarian = list()
+   appg_name <- pluck(appg_tables, 1, "X2", 1)
    
-   for (m in 3:(length(appg_tables[[2]]$X1))) {
-      
-      new_list = list(
-         member_name = pluck(appg_tables, 2, "X2", m),
-         member_party = pluck(appg_tables, 2, "X3", m),
-         member_role = pluck(appg_tables, 2, "X1", m)
-      )
-      
-      parliamentarian = c(parliamentarian, list(new_list))
-      
-      contact <- pluck(appg_tables, 3, "X1") %>% 
-         str_replace_all(., "\n", "")
-      
-      most_recent_agm <- as.Date(pluck(appg_tables, 4, "X2", 2), format = "%d/%m/%Y")
-      
-      published_statement <- pluck(appg_tables, 4, "X2", 3)
-      reporting_year <- pluck(appg_tables, 4, "X2", 4)
-      next_rep_deadline <- as.Date(pluck(appg_tables, 4, "X2", 5), format = "%d/%m/%Y")
-      
-      benefits <- list()
-      
-      if (appg_tables[[5]]$X1[[2]] == "None") {
-         
-         benefit_received <- FALSE
-         
-         new_list = list(
-            source = NA,
-            description = NA,
-            value = NA, 
-            received = NA, 
-            registered = NA
+   appg_purpose <- pluck(appg_tables, 1, "X2", 2)
+   
+   appg_category <- pluck(appg_tables, 1, "X2", 3)
+   
+   contact <- pluck(appg_tables, 3, "X1") %>% 
+      str_replace_all("\n", "")
+   
+   most_recent_agm <- as.Date(pluck(appg_tables, 4, "X2", 2), format = "%d/%m/%Y")
+   
+   published_statement <- pluck(appg_tables, 4, "X2", 3)
+   
+   reporting_year <- pluck(appg_tables, 4, "X2", 4)
+   
+   next_rep_deadline <- as.Date(pluck(appg_tables, 4, "X2", 5), format = "%d/%m/%Y")
+   
+   # Loop through Parliamentarians involved in APPG (number of Parliamentarians varies)
+   parliamentarian <- list()
+   
+   if (length(appg_tables) >= 2 && !is.null(appg_tables[[2]]$X1)) {
+      for (m in 3:length(appg_tables[[2]]$X1)) {
+         member <- list(
+            member_name  = pluck(appg_tables, 2, "X2", m),
+            member_party = pluck(appg_tables, 2, "X3", m),
+            member_role  = pluck(appg_tables, 2, "X1", m)
          )
-         
-         benefits <- list(benefits, list(new_list))
-         
-      } else {
-         benefit_received <- TRUE
-         
-         for (n in 2:(length(appg_tables[[6]]$X1))) {
-            
-            new_list = list(
-               source = pluck(appg_tables, 5, "X1", n),
-               description = pluck(appg_tables, 5, "X2", n),
-               value = pluck(appg_tables, 5, "X3", n), 
-               received = pluck(appg_tables, 5, "X4", n),
-               registered = pluck(appg_tables, 5, "X5", n),
-            )
-            
-            benefits = c(benefits, list(new_list))
+         parliamentarian <- c(parliamentarian, list(member))
+      }
+   }
+   
+   # Check for benefit information
+   benefits <- list()
+   val <- pluck(appg_tables, 5, "X1", 2, .default = NA)
+   
+   # If no benefits, set to FALSE and child items to NA
+   if (!is.na(val) && val == "None") {
+      benefit_received <- FALSE
+      
+      benefits <- list(list(
+         source      = NA,
+         description = NA,
+         value       = NA, 
+         received    = NA, 
+         registered  = NA
+      ))
+      
+   # If benefits received, pluck extract values (number of benefits varies)
+   } else {
+      benefit_received <- TRUE
+      
+      if (length(appg_tables) >= 6 && !is.null(appg_tables[[6]]$X1)) {
+         for (i in 3:length(appg_tables[[6]]$X1)) {
+            benefit <- list(list(
+               source      = pluck(appg_tables, 6, "X1", i),
+               description = pluck(appg_tables, 6, "X2", i),
+               value       = pluck(appg_tables, 6, "X3", i),
+               received    = pluck(appg_tables, 6, "X4", i),
+               registered  = pluck(appg_tables, 6, "X5", i)
+            ))
+            benefits <- c(benefits, benefit)
          }
       }
    }
    
-   appg = list(
-      appg_name = appg_name, 
-      appg_purpose = appg_purpose, 
-      appg_category= appg_category,
-      parliamentarian = parliamentarian,
-      contact = contact, 
-      most_recent_agm = most_recent_agm,
+   # Combine everything for this APPG
+   temp_list <- list(
+      appg_name           = appg_name, 
+      appg_purpose        = appg_purpose, 
+      appg_category       = appg_category,
+      parliamentarian     = parliamentarian,
+      contact             = contact, 
+      most_recent_agm     = most_recent_agm,
       published_statement = published_statement, 
-      benefit_received = benefit_received, 
-      benefits = benefits
+      benefit_received    = benefit_received, 
+      benefits            = benefits
    )
    
+   # Append to result list
+   appg <- c(appg, list(temp_list))
 }
-   
+
+appg[[1]]
+
 ```   
-   
-   entry
-   name
-   purpose
-   category
-   parliamentarian
-   name
-   party
-   role
-   contact
-   most_recent_agm
-   published_statement
-   reporting_year
-   next_reporting_deadline
-   benefits
-   source
-   description
-   value
-   received
-   registered
-   
-   
-   
