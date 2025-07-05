@@ -1,6 +1,6 @@
 # Extracting APPG Information
 
-APPG Extract pulls APPG information (name, Parliamentarians, registered benefits, etc) from their various webpages into a single nested list.
+APPG Extract pulls APPG information (name, Parliamentarians, registered benefits, etc) from their various webpages into a single nested list for easy examination.
 
 ### About APPGs:
 
