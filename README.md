@@ -20,7 +20,7 @@ The resulting list contains 514 items (individual APPGs). Each item contains fie
 
 The script currently operates on HTML files currently saved locally but could be modified to incorporate web scraping.
 
-### What's included:
+### Main files:
 
 | **File**            | **Description**                                                                         |
 |---------------------|-----------------------------------------------------------------------------------------|
