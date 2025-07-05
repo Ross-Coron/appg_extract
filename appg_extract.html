@@ -1639,7 +1639,8 @@ Groups.</p>
 library(readr)
 library(rvest)
 library(stringr)
-library(purrr)</code></pre>
+library(purrr)
+library(jsonlite)</code></pre>
 <p>Load in APPG webpages (saved locally).</p>
 <pre class="r"><code># Get files
 files &lt;- list.files(path=&quot;./appg_webpages&quot;, full.names=TRUE, recursive=FALSE)
@@ -1741,7 +1742,7 @@ for (n in 1:nrow(raw_appg_df)) {
    
    appg_category &lt;- pluck(appg_tables, 1, &quot;X2&quot;, 3)
    
-   contact &lt;- pluck(appg_tables, 3, &quot;X1&quot;) %&gt;% 
+   contact &lt;- pluck(appg_tables, 3, &quot;X1&quot;, 2) %&gt;% 
       str_replace_all(&quot;\n&quot;, &quot;&quot;)
    
    most_recent_agm &lt;- as.Date(pluck(appg_tables, 4, &quot;X2&quot;, 2), format = &quot;%d/%m/%Y&quot;)
@@ -1877,8 +1878,7 @@ length(appg)</code></pre>
 ## 
 ## 
 ## $contact
-## [1] &quot;Contact Details&quot;                                                                                                                                                                                                                                     
-## [2] &quot;Registered Contact: Sir Andrew Mitchell MP, House of Commons, London, SW1A 0AA. Tel: 020 7219 8516. Email: andrew.mitchell.mp@parliament.uk    Secretariat: UK Abraham Accords Group acts as the group&#39;s secretariat. https://www.abraham-accords.uk&quot;
+## [1] &quot;Registered Contact: Sir Andrew Mitchell MP, House of Commons, London, SW1A 0AA. Tel: 020 7219 8516. Email: andrew.mitchell.mp@parliament.uk    Secretariat: UK Abraham Accords Group acts as the group&#39;s secretariat. https://www.abraham-accords.uk&quot;
 ## 
 ## $most_recent_agm
 ## [1] &quot;2025-03-24&quot;
@@ -1905,9 +1905,13 @@ length(appg)</code></pre>
 ## 
 ## $benefits[[1]]$registered
 ## [1] NA</code></pre>
-<p>Save output. To re-read into memory: foo &lt;-
-readRDS(“all_appgs.RData”)</p>
+<p>Save output. To re-read into memory: readRDS(“all_appgs.RData”).</p>
 <pre class="r"><code>saveRDS(appg, &quot;all_appgs.RData&quot;)</code></pre>
+<p>Convert nested list to JSON and save. To convert back: fromJSON(txt,
+simplifyDataFrame = FALSE, flatten = FALSE).</p>
+<pre class="r"><code>appg_json &lt;- toJSON(appg, pretty = TRUE, auto_unbox = TRUE)
+
+write(appg_json, file = &quot;all_appgs.json&quot;)</code></pre>
 
 
 

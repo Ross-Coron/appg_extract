@@ -16,6 +16,7 @@ library(readr)
 library(rvest)
 library(stringr)
 library(purrr)
+library(jsonlite)
 
 ```
 
@@ -106,7 +107,7 @@ for (n in 1:nrow(raw_appg_df)) {
    
    appg_category <- pluck(appg_tables, 1, "X2", 3)
    
-   contact <- pluck(appg_tables, 3, "X1") %>% 
+   contact <- pluck(appg_tables, 3, "X1", 2) %>% 
       str_replace_all("\n", "")
    
    most_recent_agm <- as.Date(pluck(appg_tables, 4, "X2", 2), format = "%d/%m/%Y")
@@ -187,8 +188,17 @@ cat("\n")
 appg[[1]]
 
 ```   
-Save output. To re-read into memory: foo <- readRDS("all_appgs.RData")
+Save output. To re-read into memory: readRDS("all_appgs.RData").
 ```{r}
+
 saveRDS(appg, "all_appgs.RData")
+
 ```
 
+Convert nested list to JSON and save. To convert back: fromJSON(txt, simplifyDataFrame = FALSE, flatten = FALSE).
+```{r}
+
+appg_json <- toJSON(appg, pretty = TRUE, auto_unbox = TRUE)
+
+write(appg_json, file = "all_appgs.json")
+```
