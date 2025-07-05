@@ -1,6 +1,8 @@
 # Extracting APPG Information
 
-APPG Extract pulls APPG information (name, Parliamentarians, registered benefits, etc) from their various webpages into a single nested list for easy examination.
+APPG Extract pulls APPG information (name, Parliamentarians, registered benefits, etc) from their various webpages into a single nested list and JSON file for easy examination.
+
+![Preview image](preview_image.png)
 
 ### About APPGs:
 
@@ -14,11 +16,11 @@ Unlike much of Parliament's data, APPG information is not retrievable via an API
 
 ### How it works:
 
-Written in R, APPG Extract reads the HTML code for each APPG webpage into a single data frame. For each of the rows in this data frame (each corresponding to an APPG), it then extracts all information on the Group stored across several tables into a single nested list. 
+Written in R, APPG Extract reads the HTML code for each APPG webpage into a single data frame. For each of the rows in this data frame (each corresponding to an APPG), it then extracts all information on the Group stored across several tables into a single nested list and JSON file.
 
-The resulting list contains 514 items (individual APPGs). Each item contains fields for the APPG's name, purpose, category, Parliamentarians (name, party, and role), contact details, annual general meeting information, and registered benefits.
+The resulting list / JSON object contains 514 items (individual APPGs). Each item contains fields for the APPG's name, purpose, category, Parliamentarians (name, party, and role), contact details, annual general meeting information, and registered benefits.
 
-The script currently operates on HTML files currently saved locally but could be modified to incorporate web scraping.
+The script currently operates on HTML files saved locally, but could easily be modified to incorporate web scraping.
 
 ### Main files:
 
@@ -26,5 +28,10 @@ The script currently operates on HTML files currently saved locally but could be
 |---------------------|-----------------------------------------------------------------------------------------|
 | appg_extract.Rmd    | Main file. Reads in HTML webpages and generates nested list of APPGs.                   |
 | appg_extract.html   | HTML knit output of above.                                                              |
-| appg_hyperlinks.txt | List of individual APPG webpages from 18 June 2025 APPG register                        |
+| appg_hyperlinks.txt | List of individual APPG webpages from 18 June 2025 APPG register.                       |
 | all_appgs.RData     | Output file. Nested list of all APPGs and their details from the 18 June 2025 register. |
+| all_appgs.json      | As above but in JSON format.                                                            |
+
+### Et al.
+
+TODO
