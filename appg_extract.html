@@ -1819,6 +1819,7 @@ for (n in 1:nrow(raw_appg_df)) {
 
 length(appg)</code></pre>
 <pre><code>## [1] 514</code></pre>
+<pre class="r"><code>cat(&quot;\n&quot;)</code></pre>
 <pre class="r"><code>appg[[1]]</code></pre>
 <pre><code>## $appg_name
 ## [1] &quot;All-Party Parliamentary Group on the Abraham Accords&quot;
@@ -1904,6 +1905,9 @@ length(appg)</code></pre>
 ## 
 ## $benefits[[1]]$registered
 ## [1] NA</code></pre>
+<p>Save output. To re-read into memory: foo &lt;-
+readRDS(“all_appgs.RData”)</p>
+<pre class="r"><code>saveRDS(appg, &quot;all_appgs.RData&quot;)</code></pre>
 
 
 

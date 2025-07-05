@@ -183,6 +183,12 @@ for (n in 1:nrow(raw_appg_df)) {
 }
 
 length(appg)
+cat("\n")
 appg[[1]]
 
 ```   
+Save output. To re-read into memory: foo <- readRDS("all_appgs.RData")
+```{r}
+saveRDS(appg, "all_appgs.RData")
+```
+
